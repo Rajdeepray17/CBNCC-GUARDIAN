@@ -7,6 +7,10 @@
 // Tips: Set TOKEN, PREFIX, and optional channel IDs below.
 
 require('dotenv').config();
+const express = require('express');
+const app = express();
+const fetch = require('node-fetch'); // required for Piston API
+const PORT = process.env.PORT || 3000;
 
 const { 
   Client, 
@@ -17,7 +21,7 @@ const {
 } = require('discord.js');
 
 // ================== CONFIG ==================
-const TOKEN   = "YOUR_BOT_TOKEN_HERE";   // <- paste your bot token
+// <- paste your bot token
 const PREFIX  = "!";                     // change if you like (e.g., "?")
 
 // Optional: put a channel ID for welcome/goodbye messages.

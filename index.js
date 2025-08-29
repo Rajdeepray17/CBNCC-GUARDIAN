@@ -1,10 +1,5 @@
 // === Code Busters & Coding Club Bot ===
 // Discord.js v14
-// Features:
-// - Prefix commands (!): help, ping, clear, kick, ban, mute, unmute, slowmode, role add/remove, say, announce
-// - Welcome/leave messages
-// - Coding helpers: quote, resource, daily, code (Piston API)
-// Tips: Set TOKEN, PREFIX, and optional channel IDs below.
 
 require('dotenv').config();
 const express = require('express');
@@ -16,389 +11,337 @@ const {
   Client, 
   GatewayIntentBits, 
   Partials,
-  EmbedBuilder,
-  PermissionsBitField
+  EmbedBuilder
 } = require('discord.js');
 
-// ================== CONFIG ==================
-// <- paste your bot token
-const PREFIX  = "!";                     // change if you like (e.g., "?")
+const PREFIX  = "!"; 
 
-// Optional: put a channel ID for welcome/goodbye messages.
-// Right-click channel > Copy ID (enable Developer Mode in Discord settings)
-const WELCOME_CHANNEL_ID = "";           // e.g., "123456789012345678"
-const GOODBYE_CHANNEL_ID = "";           // e.g., "123456789012345678"
-
-// ===========================================
+const WELCOME_CHANNEL_ID = "";
+const GOODBYE_CHANNEL_ID = "";
 
 const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
-    GatewayIntentBits.GuildMembers,     // for welcomes/leaves
+    GatewayIntentBits.GuildMembers,
     GatewayIntentBits.GuildMessages,
     GatewayIntentBits.MessageContent
   ],
   partials: [Partials.Channel, Partials.Message]
 });
 
-client.on("clientReady", (client) => {
-    console.log(`✅ Logged in as ${client.user.tag}`);
+client.on("ready", (c) => {
+    console.log(`✅ Logged in as ${c.user.tag}`);
 });
-
 
 // ========== WELCOME / GOODBYE ==========
 client.on('guildMemberAdd', async (member) => {
-  try {
-    if (!WELCOME_CHANNEL_ID) return;
-    const ch = member.guild.channels.cache.get(WELCOME_CHANNEL_ID);
-    if (!ch) return;
-
-    const embed = new EmbedBuilder()
-      .setTitle("👋 Welcome!")
-      .setDescription(`Hey ${member}, welcome to **${member.guild.name}**!\nCheck out the rules and say hi!`)
-      .setTimestamp();
-
-    await ch.send({ embeds: [embed] });
-  } catch (e) { console.error("Welcome error:", e); }
+  if (!WELCOME_CHANNEL_ID) return;
+  const ch = member.guild.channels.cache.get(WELCOME_CHANNEL_ID);
+  if (!ch) return;
+  const embed = new EmbedBuilder()
+    .setTitle("👋 Welcome!")
+    .setDescription(`Hey ${member}, welcome to **${member.guild.name}**!`)
+    .setTimestamp();
+  await ch.send({ embeds: [embed] });
 });
 
 client.on('guildMemberRemove', async (member) => {
-  try {
-    if (!GOODBYE_CHANNEL_ID) return;
-    const ch = member.guild.channels.cache.get(GOODBYE_CHANNEL_ID);
-    if (!ch) return;
-
-    const embed = new EmbedBuilder()
-      .setTitle("👋 Goodbye!")
-      .setDescription(`${member.user?.tag ?? "A member"} left the server. We’ll miss you!`)
-      .setTimestamp();
-
-    await ch.send({ embeds: [embed] });
-  } catch (e) { console.error("Goodbye error:", e); }
+  if (!GOODBYE_CHANNEL_ID) return;
+  const ch = member.guild.channels.cache.get(GOODBYE_CHANNEL_ID);
+  if (!ch) return;
+  const embed = new EmbedBuilder()
+    .setTitle("👋 Goodbye!")
+    .setDescription(`${member.user?.tag ?? "A member"} left the server.`)
+    .setTimestamp();
+  await ch.send({ embeds: [embed] });
 });
 
-// ============= SIMPLE DATA (coding) =============
+// ============= SIMPLE DATA =============
 const quotes = [
-  "Programs must be written for people to read, and only incidentally for machines to execute. — Harold Abelson",
+  "Programs must be written for people to read. — Harold Abelson",
   "Talk is cheap. Show me the code. — Linus Torvalds",
   "First, solve the problem. Then, write the code. — John Johnson",
-  "Simplicity is the soul of efficiency. — Austin Freeman",
-  "Before software can be reusable it first has to be usable. — Ralph Johnson",
+  "Simplicity is the soul of efficiency. — Austin Freeman"
 ];
 
 const resources = {
-  "dsa": [
-    "https://www.geeksforgeeks.org/data-structures/",
-    "https://cp-algorithms.com/",
-    "https://leetcode.com/explore/"
+  javascript: ["https://developer.mozilla.org/en-US/docs/Web/JavaScript"],
+  python: ["https://docs.python.org/3/"],
+  web: ["https://developer.mozilla.org/en-US/docs/Learn"]
+};
+
+// ✅ Daily problems with difficulty
+const dailyProblems = [
+  { title: "Two Sum", link: "https://leetcode.com/problems/two-sum/", diff: "easy" },
+  { title: "Valid Parentheses", link: "https://leetcode.com/problems/valid-parentheses/", diff: "easy" },
+  { title: "Merge Two Sorted Lists", link: "https://leetcode.com/problems/merge-two-sorted-lists/", diff: "easy" },
+  { title: "Binary Search", link: "https://leetcode.com/problems/binary-search/", diff: "medium" },
+  { title: "Best Time to Buy and Sell Stock", link: "https://leetcode.com/problems/best-time-to-buy-and-sell-stock/", diff: "medium" },
+  { title: "Binary Tree Inorder Traversal", link: "https://leetcode.com/problems/binary-tree-inorder-traversal/", diff: "medium" },
+  { title: "Word Ladder", link: "https://leetcode.com/problems/word-ladder/", diff: "hard" },
+  { title: "LFU Cache", link: "https://leetcode.com/problems/lfu-cache/", diff: "hard" }
+];
+
+// ✅ Aptitude & reasoning questions
+const aptitude = {
+  easy: [
+    "Q: If 12 pens cost 36, how much do 8 pens cost? (Ans: 24)",
+    "Q: Find the missing number: 2, 4, 8, 16, ? (Ans: 32)"
   ],
-  "javascript": [
-    "https://developer.mozilla.org/en-US/docs/Web/JavaScript",
-    "https://javascript.info/",
-    "https://eloquentjavascript.net/"
+  medium: [
+    "Q: A train 120m long passes a pole in 12s. Find speed in km/h. (Ans: 36 km/h)",
+    "Q: What is the next number? 2, 6, 12, 20, ? (Ans: 30)"
   ],
-  "python": [
-    "https://docs.python.org/3/",
-    "https://realpython.com/",
-    "https://pandas.pydata.org/docs/"
-  ],
-  "web": [
-    "https://developer.mozilla.org/en-US/docs/Learn",
-    "https://web.dev/learn/",
-    "https://frontendmasters.com/guides/learning-roadmap/"
+  hard: [
+    "Q: Solve: A alone can do work in 12 days, B in 15 days. Together? (Ans: 6.67 days)",
+    "Q: A man invests 5000 at 12% compound interest for 2 years. Find amount. (Ans: 6272)"
   ]
 };
 
-const dailyProblems = [
-  { title: "Two Sum", link: "https://leetcode.com/problems/two-sum/" },
-  { title: "Valid Parentheses", link: "https://leetcode.com/problems/valid-parentheses/" },
-  { title: "Merge Two Sorted Lists", link: "https://leetcode.com/problems/merge-two-sorted-lists/" },
-  { title: "Best Time to Buy and Sell Stock", link: "https://leetcode.com/problems/best-time-to-buy-and-sell-stock/" },
-  { title: "Binary Tree Inorder Traversal", link: "https://leetcode.com/problems/binary-tree-inorder-traversal/" },
-  { title: "Binary Search", link: "https://leetcode.com/problems/binary-search/" },
-  { title: "Climbing Stairs", link: "https://leetcode.com/problems/climbing-stairs/" },
-  { title: "Longest Common Prefix", link: "https://leetcode.com/problems/longest-common-prefix/" },
-  { title: "Valid Anagram", link: "https://leetcode.com/problems/valid-anagram/" },
-  { title: "Linked List Cycle", link: "https://leetcode.com/problems/linked-list-cycle/" },
-];
+// ✅ TeachMe video links (extended)
+const teachMe = {
+  java: [
+    "https://youtu.be/grEKMHGYyns",
+    "https://youtu.be/UmnCZ7-9yDY",
+    "https://youtu.be/hBh_CC5y8-s",
+    "https://youtu.be/A74TOX803D0",
+    "https://youtu.be/0z4o_1X0L4c"
+  ],
+  python: [
+    "https://youtu.be/_uQrJ0TkZlc",
+    "https://youtu.be/kqtD5dpn9C8",
+    "https://youtu.be/WGJJIrtnfpk",
+    "https://youtu.be/8ext9G7xspg",
+    "https://youtu.be/fqF9M92jzUo"
+  ],
+  javascript: [
+    "https://youtu.be/W6NZfCO5SIk",
+    "https://youtu.be/jS4aFq5-91M",
+    "https://youtu.be/PkZNo7MFNFg",
+    "https://youtu.be/Oe421EPjeBE",
+    "https://youtu.be/8dWL3wF_OMw"
+  ],
+  "c++": [
+    "https://youtu.be/vLnPwxZdW4Y",
+    "https://youtu.be/MNeX4EGtR5Y",
+    "https://youtu.be/ZzaPdXTrSb8",
+    "https://youtu.be/i_0rU8WjA5Q",
+    "https://youtu.be/1v_4dL8l8pQ"
+  ],
+  dsa: [
+    "https://youtu.be/tWVWeAqZ0WU",
+    "https://youtu.be/jg6a3DZ_2h4",
+    "https://youtu.be/MiJdgxTWaMs",
+    "https://youtu.be/Bt4YwJDjsPs",
+    "https://youtu.be/yVqBioOD0JU"
+  ],
+  "ai ml": [
+    "https://youtu.be/aircAruvnKk",
+    "https://youtu.be/GwIo3gDZCVQ",
+    "https://youtu.be/IHZwWFHWa-w",
+    "https://youtu.be/LCWfP7h8Vek",
+    "https://youtu.be/7eh4d6sabA0"
+  ],
+  "cyber security": [
+    "https://youtu.be/U_P23SqJaDc",
+    "https://youtu.be/3Kq1MIfTWCE",
+    "https://youtu.be/inWWhr5tnEA",
+    "https://youtu.be/2_lswM1S264",
+    "https://youtu.be/-yHMxLjrMdw"
+  ],
+  blockchain: [
+    "https://youtu.be/SSo_EIwHSd4",
+    "https://youtu.be/gyMwXuJrbJQ",
+    "https://youtu.be/6WG7D47tGb0",
+    "https://youtu.be/1c0CNpXjG_4",
+    "https://youtu.be/3aJI1ABdjQk"
+  ],
+  "agentic ai": [
+    "https://youtu.be/sb-H3e9zqNo",
+    "https://youtu.be/mVIcZD1j0YE",
+    "https://youtu.be/_k3oyQumI3E",
+    "https://youtu.be/1uukzfhR5XQ",
+    "https://youtu.be/h-93hjfMPCA"
+  ],
+  dbms: [
+    "https://youtu.be/TJ8SkcUSdbU",
+    "https://youtu.be/9Pzj7Aj25lw",
+    "https://youtu.be/dl00fOOYLOM",
+    "https://youtu.be/RLBTg8p0nGg",
+    "https://youtu.be/4lJw8PqJ0Ww"
+  ],
+  "data science": [
+    "https://youtu.be/-ETQ97mXXF0",
+    "https://youtu.be/ua-CiDNNj30",
+    "https://youtu.be/xC-c7E5PK0Y",
+    "https://youtu.be/Zi_XLOBDo_Y",
+    "https://youtu.be/ua-CiDNNj30"
+  ],
+  mongodb: [
+    "https://youtu.be/c2M-rlkkT0U",
+    "https://youtu.be/-56x56UppqQ",
+    "https://youtu.be/oSIv-E60NiU",
+    "https://youtu.be/Of1phHAAMHg",
+    "https://youtu.be/W-WihPoEb3w"
+  ],
+  "postgre sql": [
+    "https://youtu.be/qw--VYLpxG4",
+    "https://youtu.be/SpfIwlAYaKk",
+    "https://youtu.be/Lw6jtB80gDI",
+    "https://youtu.be/xpWgGV6k8Q0",
+    "https://youtu.be/MtOyTqkYJ1Y"
+  ],
+  angular: [
+    "https://youtu.be/k5E2AVpwsko",
+    "https://youtu.be/htPYk6QxacQ",
+    "https://youtu.be/3qBXWUpoPHo",
+    "https://youtu.be/Ata9cSC2WpM",
+    "https://youtu.be/lh1nxk-8RHo"
+  ],
+  php: [
+    "https://youtu.be/OK_JCtrrv-c",
+    "https://youtu.be/ZdP0KM49IVk",
+    "https://youtu.be/TXl-j3c8beY",
+    "https://youtu.be/2eebptXfEvw",
+    "https://youtu.be/HQxBKPl6LtE"
+  ],
+  "node js": [
+    "https://youtu.be/f2EqECiTBL8",
+    "https://youtu.be/TlB_eWDSMt4",
+    "https://youtu.be/Oe421EPjeBE",
+    "https://youtu.be/TlB_eWDSMt4",
+    "https://youtu.be/fBNz5xF-Kx4"
+  ],
+  "express js": [
+    "https://youtu.be/L72fhGm1tfE",
+    "https://youtu.be/gnsO8-xJ8rs",
+    "https://youtu.be/70I6ha1HYi8",
+    "https://youtu.be/7H_QH9nipNs",
+    "https://youtu.be/1NrHkjlWVhM"
+  ],
+  "react js": [
+    "https://youtu.be/bMknfKXIFA8",
+    "https://youtu.be/Tn6-PIqc4UM",
+    "https://youtu.be/w7ejDZ8SWv8",
+    "https://youtu.be/Ke90Tje7VS0",
+    "https://youtu.be/Law7wfdg_ls"
+  ],
+  "gen ai": [
+    "https://youtu.be/qbIk7-JPB2c",
+    "https://youtu.be/wVN8qz6EKDA",
+    "https://youtu.be/JMUxmLyrhSk",
+    "https://youtu.be/y57wwucbFs4",
+    "https://youtu.be/C_gZxVBrmew"
+  ]
+};
 
 // ============= HELP TEXT =============
 const helpText = [
-  `**${PREFIX}help** — Show this help`,
+  `**${PREFIX}help** — Show help`,
   `**${PREFIX}ping** — Bot latency`,
-  `**${PREFIX}clear <amount>** — Bulk delete messages (up to 100)`,
-  `**${PREFIX}kick @user [reason]** — Kick a member`,
-  `**${PREFIX}ban @user [reason]** — Ban a member`,
-  `**${PREFIX}mute @user [minutes] [reason]** — Timeout a member`,
-  `**${PREFIX}unmute @user** — Remove timeout`,
-  `**${PREFIX}slowmode <seconds>** — Set channel slowmode`,
-  `**${PREFIX}role add/remove @user <Role Name>** — Manage a user’s role`,
-  `**${PREFIX}say <message>** — Make the bot say something (Admin)`,
-  `**${PREFIX}announce <message>** — Post an embedded announcement (Manage Messages)`,
   `**${PREFIX}quote** — Random programming quote`,
-  `**${PREFIX}resource <topic>** — Useful links (topics: ${Object.keys(resources).join(", ")})`,
-  `**${PREFIX}daily** — Suggest a daily coding problem`,
-  `**${PREFIX}code <lang> \`<your code>\`** — Run small snippets via Piston API (e.g., **${PREFIX}code python \`print(1+1)\`**)`
+  `**${PREFIX}resource <topic>** — Useful resources`,
+  `**${PREFIX}daily <difficulty>** — Coding problem by difficulty (easy/medium/hard)`,
+  `**${PREFIX}aptitude <difficulty>** — Aptitude/Reasoning questions`,
+  `**${PREFIX}teachme <topic>** — YouTube playlists`,
+  `**${PREFIX}code <lang> <your_code_or_"text">** — Run code or auto-print text if inside quotes`
 ].join("\n");
 
 // ============= MESSAGE COMMANDS =============
 client.on('messageCreate', async (message) => {
-  try {
-    if (message.author.bot || !message.guild) return;
-    if (!message.content.startsWith(PREFIX)) return;
+  if (message.author.bot || !message.guild) return;
+  if (!message.content.startsWith(PREFIX)) return;
 
-    const args = message.content.slice(PREFIX.length).trim().split(/\s+/);
-    const command = args.shift()?.toLowerCase();
+  const args = message.content.slice(PREFIX.length).trim().split(/\s+/);
+  const command = args.shift()?.toLowerCase();
 
-    // ---- HELP / PING ----
-    if (command === "help") {
-      const embed = new EmbedBuilder()
-        .setTitle("🛠 Code Busters Bot — Help")
-        .setDescription(helpText)
-        .setTimestamp();
-      return message.reply({ embeds: [embed] });
-    }
+  if (command === "help") {
+    return message.reply({ embeds: [new EmbedBuilder().setTitle("Help Menu").setDescription(helpText)] });
+  }
 
-    if (command === "ping") {
-      const sent = await message.reply("Pinging...");
-      const latency = sent.createdTimestamp - message.createdTimestamp;
-      return sent.edit(`🏓 Pong! Latency: ${latency}ms`);
-    }
+  if (command === "ping") {
+    const sent = await message.reply("Pinging...");
+    return sent.edit(`🏓 Pong! Latency: ${sent.createdTimestamp - message.createdTimestamp}ms`);
+  }
 
-    // ---- CLEAR ----
-    if (command === "clear") {
-      if (!message.member.permissions.has(PermissionsBitField.Flags.ManageMessages))
-        return message.reply("❌ You need **Manage Messages** permission.");
+  if (command === "quote") {
+    return message.reply(`💡 ${quotes[Math.floor(Math.random() * quotes.length)]}`);
+  }
 
-      const amount = parseInt(args[0], 10);
-      if (!amount || amount < 1 || amount > 100)
-        return message.reply("Enter a number between 1 and 100.");
+  if (command === "resource") {
+    const topic = (args[0] || "").toLowerCase();
+    if (!resources[topic]) return message.reply(`Topics: ${Object.keys(resources).join(", ")}`);
+    return message.reply(resources[topic].join("\n"));
+  }
 
-      await message.channel.bulkDelete(amount, true);
-      const confirm = await message.channel.send(`✅ Deleted ${amount} messages.`);
-      setTimeout(() => confirm.delete().catch(() => {}), 3000);
-      return;
-    }
+  // ✅ Daily with difficulty
+  if (command === "daily") {
+    const diff = (args[0] || "").toLowerCase();
+    const pool = diff ? dailyProblems.filter(p => p.diff === diff) : dailyProblems;
+    if (!pool.length) return message.reply("No problems for that difficulty. Use easy/medium/hard.");
+    const p = pool[Math.floor(Math.random() * pool.length)];
+    return message.reply(`💻 **${p.title}** (${p.diff})\n${p.link}`);
+  }
 
-    // ---- KICK ----
-    if (command === "kick") {
-      if (!message.member.permissions.has(PermissionsBitField.Flags.KickMembers))
-        return message.reply("❌ You need **Kick Members** permission.");
+  // ✅ Aptitude
+  if (command === "aptitude") {
+    const diff = (args[0] || "").toLowerCase();
+    if (!aptitude[diff]) return message.reply("Use difficulty: easy / medium / hard");
+    const q = aptitude[diff][Math.floor(Math.random() * aptitude[diff].length)];
+    return message.reply(`🧠 ${q}`);
+  }
 
-      const user = message.mentions.users.first();
-      const reason = args.slice(1).join(" ") || "No reason provided";
-      if (!user) return message.reply("Mention the user to kick.");
+  // ✅ TeachMe
+  if (command === "teachme") {
+    const topic = args.join(" ").toLowerCase();
+    if (!teachMe[topic]) return message.reply(`Available: ${Object.keys(teachMe).join(", ")}`);
+    const list = teachMe[topic].map((u, i) => `${i+1}. ${u}`).join("\n");
+    return message.reply({ embeds: [new EmbedBuilder().setTitle(`📺 Learn ${topic}`).setDescription(list)] });
+  }
 
-      const member = await message.guild.members.fetch(user.id).catch(() => null);
-      if (!member) return message.reply("User not found in server.");
-      if (!member.kickable) return message.reply("❌ I can't kick this user (role hierarchy).");
+  // ✅ Code execution (auto-wrap text in quotes for Python print)
+  if (command === "code") {
+    const lang = (args.shift() || "").toLowerCase();
+    const joined = args.join(" ");
+    const matchQuoted = joined.match(/^"(.*)"$/); // check if entire input is in quotes
 
-      await member.kick(reason);
-      return message.reply(`✅ Kicked **${user.tag}** — ${reason}`);
-    }
-
-    // ---- BAN ----
-    if (command === "ban") {
-      if (!message.member.permissions.has(PermissionsBitField.Flags.BanMembers))
-        return message.reply("❌ You need **Ban Members** permission.");
-
-      const user = message.mentions.users.first();
-      const reason = args.slice(1).join(" ") || "No reason provided";
-      if (!user) return message.reply("Mention the user to ban.");
-
-      const member = await message.guild.members.fetch(user.id).catch(() => null);
-      if (!member) return message.reply("User not found in server.");
-      if (!member.bannable) return message.reply("❌ I can't ban this user (role hierarchy).");
-
-      await member.ban({ reason });
-      return message.reply(`✅ Banned **${user.tag}** — ${reason}`);
-    }
-
-    // ---- MUTE (Timeout) ----
-    if (command === "mute") {
-      if (!message.member.permissions.has(PermissionsBitField.Flags.ModerateMembers))
-        return message.reply("❌ You need **Moderate Members** permission.");
-
-      const user = message.mentions.users.first();
-      if (!user) return message.reply("Mention the user to mute.");
-      const minutes = parseInt(args[1], 10) || 10; // default 10 min
-      const reason = args.slice(2).join(" ") || "No reason provided";
-
-      const member = await message.guild.members.fetch(user.id).catch(() => null);
-      if (!member) return message.reply("User not found in server.");
-
-      const ms = Math.min(minutes, 10080) * 60_000; // Discord max 7 days
-      await member.timeout(ms, reason);
-      return message.reply(`✅ Muted **${user.tag}** for **${minutes}** minute(s).`);
-    }
-
-    // ---- UNMUTE (Remove Timeout) ----
-    if (command === "unmute") {
-      if (!message.member.permissions.has(PermissionsBitField.Flags.ModerateMembers))
-        return message.reply("❌ You need **Moderate Members** permission.");
-
-      const user = message.mentions.users.first();
-      if (!user) return message.reply("Mention the user to unmute.");
-
-      const member = await message.guild.members.fetch(user.id).catch(() => null);
-      if (!member) return message.reply("User not found in server.");
-
-      await member.timeout(null);
-      return message.reply(`✅ Unmuted **${user.tag}**.`);
-    }
-
-    // ---- SLOWMODE ----
-    if (command === "slowmode") {
-      if (!message.member.permissions.has(PermissionsBitField.Flags.ManageChannels))
-        return message.reply("❌ You need **Manage Channels** permission.");
-
-      const seconds = parseInt(args[0], 10) || 0;
-      if (seconds < 0 || seconds > 21600) // 6 hours max
-        return message.reply("Enter seconds between 0 and 21600.");
-
-      await message.channel.setRateLimitPerUser(seconds, "Set by bot");
-      return message.reply(`✅ Slowmode set to **${seconds}**s.`);
-    }
-
-    // ---- ROLE add/remove ----
-    if (command === "role") {
-      if (!message.member.permissions.has(PermissionsBitField.Flags.ManageRoles))
-        return message.reply("❌ You need **Manage Roles** permission.");
-
-      const sub = (args.shift() || "").toLowerCase();
-      const user = message.mentions.users.first();
-      if (!["add", "remove"].includes(sub) || !user) {
-        return message.reply(`Usage: \`${PREFIX}role add/remove @user <Role Name>\``);
-      }
-      const roleName = args.join(" ");
-      if (!roleName) return message.reply("Provide a role name.");
-
-      const member = await message.guild.members.fetch(user.id).catch(() => null);
-      if (!member) return message.reply("User not found.");
-
-      const role = message.guild.roles.cache.find(r => r.name.toLowerCase() === roleName.toLowerCase());
-      if (!role) return message.reply("Role not found.");
-
-      if (sub === "add") {
-        await member.roles.add(role).catch(() => {});
-        return message.reply(`✅ Added role **${role.name}** to **${user.tag}**.`);
+    let source = "";
+    if (matchQuoted) {
+      if (lang === "python") {
+        source = `print("${matchQuoted[1]}")`;
       } else {
-        await member.roles.remove(role).catch(() => {});
-        return message.reply(`✅ Removed role **${role.name}** from **${user.tag}**.`);
+        source = matchQuoted[1];
       }
+    } else {
+      source = joined;
     }
 
-    // ---- SAY (Admin) ----
-    if (command === "say") {
-      if (!message.member.permissions.has(PermissionsBitField.Flags.Administrator))
-        return message.reply("❌ Only admins can use this.");
-      const text = args.join(" ");
-      if (!text) return message.reply("Provide a message.");
-      await message.delete().catch(() => {});
-      return message.channel.send(text);
+    if (!lang || !source) return message.reply(`Usage: ${PREFIX}code <lang> your_code`);
+
+    try {
+      const res = await fetch("https://emkc.org/api/v2/piston/execute", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ language: lang, version: "*", files: [{ content: source }] })
+      });
+      const data = await res.json();
+      const out = [
+        data.run?.stdout ? `**Output:**\n\`\`\`\n${truncate(data.run.stdout)}\n\`\`\`` : "",
+        data.run?.stderr ? `**Errors:**\n\`\`\`\n${truncate(data.run.stderr)}\n\`\`\`` : ""
+      ].filter(Boolean).join("\n");
+      return message.reply(out || "No output.");
+    } catch (err) {
+      console.error(err);
+      return message.reply("❌ Failed to run code.");
     }
-
-    // ---- ANNOUNCE (Manage Messages) ----
-    if (command === "announce") {
-      if (!message.member.permissions.has(PermissionsBitField.Flags.ManageMessages))
-        return message.reply("❌ You need **Manage Messages** permission.");
-      const text = args.join(" ");
-      if (!text) return message.reply("Provide announcement text.");
-
-      const embed = new EmbedBuilder()
-        .setTitle("📢 Announcement")
-        .setDescription(text)
-        .setTimestamp();
-      return message.channel.send({ embeds: [embed] });
-    }
-
-    // ---- CODING: QUOTE ----
-    if (command === "quote") {
-      const quote = quotes[Math.floor(Math.random() * quotes.length)];
-      return message.reply(`💡 ${quote}`);
-    }
-
-    // ---- CODING: RESOURCE ----
-    if (command === "resource") {
-      const topic = (args[0] || "").toLowerCase();
-      if (!topic || !resources[topic]) {
-        return message.reply(`Topics: ${Object.keys(resources).join(", ")}`);
-      }
-      const list = resources[topic].map((u, i) => `${i + 1}. ${u}`).join("\n");
-      const embed = new EmbedBuilder()
-        .setTitle(`📚 Resources — ${topic}`)
-        .setDescription(list)
-        .setTimestamp();
-      return message.reply({ embeds: [embed] });
-    }
-
-    // ---- CODING: DAILY PROBLEM ----
-    if (command === "daily") {
-      const p = dailyProblems[Math.floor(Math.random() * dailyProblems.length)];
-      const embed = new EmbedBuilder()
-        .setTitle(`💻 Daily Problem: ${p.title}`)
-        .setDescription(`[Solve here](${p.link})`)
-        .setTimestamp();
-      return message.reply({ embeds: [embed] });
-    }
-
-    // ---- CODING: RUN SNIPPET (via Piston API) ----
-    // Usage: !code python `print(1+1)`
-    if (command === "code") {
-      const lang = (args.shift() || "").toLowerCase();
-      const codeBlock = message.content.match(/```([\s\S]*?)```/);
-      const inline = message.content.match(/`([^`]+)`/);
-
-      let source = "";
-      if (codeBlock) source = codeBlock[1];
-      else if (inline) source = inline[1];
-      else source = args.join(" ");
-
-      if (!lang || !source) {
-        return message.reply(
-          `Usage: \`${PREFIX}code <language> \`your code\`\`\` or \`\`\`your code\`\`\`\`\`\`\n` +
-          `Example: ${PREFIX}code python \`print(1+1)\``
-        );
-      }
-
-      // Piston execute API (no key needed, subject to rate limits)
-      try {
-        const res = await fetch("https://emkc.org/api/v2/piston/execute", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            language: lang,
-            version: "*", // latest
-            files: [{ content: source }]
-          })
-        });
-
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const data = await res.json();
-
-        const out = [
-          data.run?.stdout ? `**Output:**\n\`\`\`\n${truncate(data.run.stdout)}\n\`\`\`` : "",
-          data.run?.stderr ? `**Errors:**\n\`\`\`\n${truncate(data.run.stderr)}\n\`\`\`` : ""
-        ].filter(Boolean).join("\n");
-
-        if (!out) return message.reply("No output.");
-        return message.reply(out);
-      } catch (err) {
-        console.error(err);
-        return message.reply("❌ Failed to run code. Try a simpler snippet or different language.");
-      }
-    }
-
-  } catch (err) {
-    console.error("Command error:", err);
   }
 });
 
-// Helper to trim long outputs
+// Helper to trim
 function truncate(text, limit = 1500) {
   if (!text) return "";
-  if (text.length <= limit) return text;
-  return text.slice(0, limit) + "\n... (truncated)";
+  return text.length <= limit ? text : text.slice(0, limit) + "\n... (truncated)";
 }
 
 client.login(process.env.DISCORD_TOKEN);
+

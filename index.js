@@ -1,5 +1,5 @@
 // === Code Busters & Coding Club Bot ===
-// Discord.js v14
+//  Discord.js v14
 
 require('dotenv').config();
 const express = require('express');

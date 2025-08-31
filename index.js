@@ -343,5 +343,87 @@ function truncate(text, limit = 1500) {
   return text.length <= limit ? text : text.slice(0, limit) + "\n... (truncated)";
 }
 
+// ================= SLASH COMMAND HANDLER =================
+client.on('interactionCreate', async (interaction) => {
+  if (!interaction.isChatInputCommand()) return;
+
+  const { commandName, options } = interaction;
+
+  if (commandName === 'help') {
+    return interaction.reply({ embeds: [new EmbedBuilder().setTitle("Help Menu").setDescription(helpText)] });
+  }
+
+  if (commandName === 'ping') {
+    return interaction.reply(`🏓 Pong! Latency: ${Date.now() - interaction.createdTimestamp}ms`);
+  }
+
+  if (commandName === 'quote') {
+    return interaction.reply(`💡 ${quotes[Math.floor(Math.random() * quotes.length)]}`);
+  }
+
+  if (commandName === 'resource') {
+    const topic = options.getString('topic').toLowerCase();
+    if (!resources[topic]) return interaction.reply(`Topics: ${Object.keys(resources).join(", ")}`);
+    return interaction.reply(resources[topic].join("\n"));
+  }
+
+  if (commandName === 'daily') {
+    const diff = (options.getString('difficulty') || "").toLowerCase();
+    const pool = diff ? dailyProblems.filter(p => p.diff === diff) : dailyProblems;
+    if (!pool.length) return interaction.reply("No problems for that difficulty. Use easy/medium/hard.");
+    const p = pool[Math.floor(Math.random() * pool.length)];
+    return interaction.reply(`💻 **${p.title}** (${p.diff})\n${p.link}`);
+  }
+
+  if (commandName === 'aptitude') {
+    const diff = options.getString('difficulty').toLowerCase();
+    if (!aptitude[diff]) return interaction.reply("Use difficulty: easy / medium / hard");
+    const q = aptitude[diff][Math.floor(Math.random() * aptitude[diff].length)];
+    return interaction.reply(`🧠 ${q}`);
+  }
+
+  if (commandName === 'teachme') {
+    const topic = options.getString('topic').toLowerCase();
+    if (!teachMe[topic]) return interaction.reply(`Available: ${Object.keys(teachMe).join(", ")}`);
+    const list = teachMe[topic].map((u, i) => `${i+1}. ${u}`).join("\n");
+    return interaction.reply({ embeds: [new EmbedBuilder().setTitle(`📺 Learn ${topic}`).setDescription(list)] });
+  }
+
+  if (commandName === 'code') {
+    const lang = options.getString('language').toLowerCase();
+    const joined = options.getString('source');
+    const matchQuoted = joined.match(/^"(.*)"$/);
+
+    let source = "";
+    if (matchQuoted) {
+      if (lang === "python") {
+        source = `print("${matchQuoted[1]}")`;
+      } else {
+        source = matchQuoted[1];
+      }
+    } else {
+      source = joined;
+    }
+
+    try {
+      const res = await fetch("https://emkc.org/api/v2/piston/execute", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ language: lang, version: "*", files: [{ content: source }] })
+      });
+      const data = await res.json();
+      const out = [
+        data.run?.stdout ? `**Output:**\n\`\`\`\n${truncate(data.run.stdout)}\n\`\`\`` : "",
+        data.run?.stderr ? `**Errors:**\n\`\`\`\n${truncate(data.run.stderr)}\n\`\`\`` : ""
+      ].filter(Boolean).join("\n");
+      return interaction.reply(out || "No output.");
+    } catch (err) {
+      console.error(err);
+      return interaction.reply("❌ Failed to run code.");
+    }
+  }
+});
+
+
 client.login(process.env.DISCORD_TOKEN);
 
